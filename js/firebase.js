@@ -7,12 +7,13 @@ import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from
 // --- Konfigurasi Firebase ---
 // Ganti dengan config project kamu
 const firebaseConfig = {
-  apiKey: "API_KEY_KAMU",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyBA1wTT_iy6YTTlChLeCp5-5nVBvIR2SuA",
+  authDomain: "cubooz-24d2c.firebaseapp.com",
+  projectId: "cubooz-24d2c",
+  storageBucket: "cubooz-24d2c.firebasestorage.app",
+  messagingSenderId: "769025854290",
+  appId: "1:769025854290:web:8567f44cdf19996596c88b",
+  measurementId: "G-K0WHBVHZJH"
 };
 
 // Init Firebase App
