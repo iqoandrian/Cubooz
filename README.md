@@ -1,0 +1,2 @@
+# Cubooz
+A Cubooz game
