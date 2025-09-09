@@ -183,13 +183,22 @@ function createStarfield() {
   scene.add(starfield);
 }
 
-function createRubikCube() {
-  if (cubeGroup) scene.remove(cubeGroup);
-  cubeGroup = new THREE.Group();
+function createRubikCube(difficulty) {
+    if (cubeGroup) scene.remove(cubeGroup);
+    particles.forEach(p => scene.remove(p.mesh));
+    particles = [];
 
-  const spacing = 1.1, size = cubeSize;
-  const offset = (size - 1) * spacing / 2;
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
+    // 🔥 tentukan ukuran kubus sesuai level
+    const size = currentCubeSize; // 3,4,5 dst
+    const spacing = 1.1, cubeSize = 1;
+    const offset = (size - 1) * spacing / 2;
+    const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+
+    // 🎯 atur kamera supaya jarak pas
+    const baseDistance = 6; 
+    camera.position.z = baseDistance + size * 2;
+
+    cubeGroup = new THREE.Group();
 
   for (let i = 0; i < size; i++) {
     for (let j = 0; j < size; j++) {
