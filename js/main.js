@@ -12,3 +12,5 @@ document.getElementById('login-btn').addEventListener('click', async () => {
   startGame();
   loadLeaderboard();
 });
+console.log("Scene:", scene);
+console.log("CubeGroup:", cubeGroup.children.length);
