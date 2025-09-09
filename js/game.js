@@ -322,17 +322,31 @@ function onPointerMove(event) {
   }
 }
 
-function onPointerUp(event) {
-  if (!isDragging && !isGameOver) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(cubeGroup.children);
-    if (intersects.length > 0) {
-      handleCubeHit(intersects[0].object, intersects[0].face.materialIndex);
+function onPointerUp(event){
+    if (isGameOver) return;
+
+    const dx = Math.abs(event.clientX - previousMousePosition.x);
+    const dy = Math.abs(event.clientY - previousMousePosition.y);
+
+    if (!isDragging && dx < 6 && dy < 6 && cubeGroup) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(cubeGroup.children, true);
+        if (intersects.length > 0) {
+            // cari parent cube yg punya gridPos
+            let picked = intersects[0].object;
+            while (picked && !picked.gridPos && picked.parent) picked = picked.parent;
+            if (!picked || !picked.gridPos) return;
+
+            const faceIdx = (intersects[0].face && typeof intersects[0].face.materialIndex === 'number')
+                ? intersects[0].face.materialIndex
+                : picked.greenFaceIndex;
+
+            handleCubeHit(picked, faceIdx, event.clientX, event.clientY);
+        }
     }
-  }
-  isDragging = false;
+    isDragging = false;
 }
 
 // --- Animation Loop ---
@@ -385,4 +399,40 @@ async function loadLeaderboard() {
   html += "</ol>";
 
   document.getElementById("leaderboard").innerHTML = html;
+}
+
+function detonateBomb(bombCube, screenX = window.innerWidth/2, screenY = window.innerHeight/2) {
+    if (!bombCube || bombCube.isSolved) return;
+
+    const { i: bi, j: bj, k: bk } = bombCube.gridPos || {};
+
+    const cubesToDestroy = [];
+    cubeGroup.children.forEach(targetCube => {
+        if (targetCube.isSolved) return;
+        if (!targetCube.gridPos) return;
+        const { i: ti, j: tj, k: tk } = targetCube.gridPos;
+        const dist = Math.max(Math.abs(bi - ti), Math.abs(bj - tj), Math.abs(bk - tk));
+        if (dist > 0 && dist <= 1) cubesToDestroy.push(targetCube);
+    });
+
+    playSound('bomb');
+    const bombPos = bombCube.getWorldPosition(new THREE.Vector3());
+    createExplosion(bombPos, 0xff4444);
+    showFloatingScore('BOOM', screenX, screenY, '#ffb4b4');
+
+    destroyCube(bombCube);
+    updateUI();
+
+    cubesToDestroy.forEach((target, idx) => {
+        setTimeout(() => {
+            if (!target.isSolved) {
+                totalScore += 2;
+                playSound('explosion');
+                const screenPos = worldToScreen(target.getWorldPosition(new THREE.Vector3()));
+                showFloatingScore('+2', screenPos.x, screenPos.y, '#ffd7b5');
+                destroyCube(target);
+                updateUI();
+            }
+        }, 80 * idx);
+    });
 }
