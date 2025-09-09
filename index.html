@@ -3,60 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Kubus 3D - Online Leaderboard</title>
+    <title>Game Kubus 3D - Progresif</title>
     <!-- Memuat Tailwind CSS untuk styling UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Memuat Three.js untuk grafis 3D -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Memuat Tone.js untuk audio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-
-    <!-- SDK Firebase v9 -->
-    <script type="module">
-        // Import fungsi yang kita butuhkan dari SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-
-        // --- KONFIGURASI FIREBASE ANDA ---
-        // GANTI DENGAN KONFIGURASI DARI PROYEK FIREBASE ANDA SENDIRI
-
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyBjMP9Km6V3xogU32HD3BhjiC-z4_by210",
-          authDomain: "cubooz.firebaseapp.com",
-          projectId: "cubooz",
-          storageBucket: "cubooz.firebasestorage.app",
-          messagingSenderId: "1004764640739",
-          appId: "1:1004764640739:web:9aa7528052b53803a29cd6",
-          measurementId: "G-2CRHTY7B5V"
-        };
-
-        // Inisialisasi Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        // Simpan referensi ke fungsi agar bisa diakses global
-        window.firebase = {
-            auth,
-            db,
-            GoogleAuthProvider,
-            signInWithPopup,
-            onAuthStateChanged,
-            collection,
-            addDoc,
-            query,
-            orderBy,
-            limit,
-            onSnapshot,
-            serverTimestamp
-        };
-    </script>
-
     <style>
-        /* ... (CSS sama seperti sebelumnya) ... */
-         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Inter', sans-serif; color: white; }
+        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Inter', sans-serif; color: white; }
         canvas { display: block; }
         .overlay-ui { position: absolute; padding: 10px 20px; background-color: rgba(0, 0, 0, 0.7); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 1.1rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px); }
         #game-info { top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; }
@@ -65,20 +20,10 @@
         .btn { background-color: #4a5568; padding: 12px 24px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; margin-top: 20px; cursor: pointer; transition: background-color 0.3s, transform 0.2s; }
         .btn:hover { background-color: #2d3748; transform: scale(1.05); }
         #mute-btn { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background-color: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; }
-        #leaderboard { max-height: 200px; overflow-y: auto; text-align: left; font-size: 1rem; margin-top: 1rem;}
     </style>
 </head>
 <body>
-    <!-- Layar Login -->
-    <div id="login-screen" class="message-box flex flex-col items-center">
-        <h1 class="title mb-4">Game Kubus 3D Online</h1>
-        <p class="mb-6">Masuk dengan Google untuk bermain dan menyimpan skormu di leaderboard global!</p>
-        <button id="login-btn" class="btn">
-            Login dengan Google
-        </button>
-    </div>
-
-    <!-- UI Game -->
+    <!-- UI Overlay: Skor, Waktu, Level -->
     <div id="game-ui" class="hidden">
         <div id="game-info" class="overlay-ui">
             <div id="score-board">Skor: 0</div>
@@ -88,26 +33,37 @@
     </div>
 
     <!-- Pesan-pesan Game -->
-    <div id="level-complete-message" class="message-box hidden flex-col items-center">...</div>
+    <div id="start-message" class="message-box flex-col items-center">
+        <span class="title">Game Kubus 3D</span>
+        <p class="mt-4 text-lg">Hancurkan sisi kubus yang berwarna hijau! Hati-hati dengan bom!</p>
+        <button id="start-btn" class="btn">Mulai Game</button>
+    </div>
+    <div id="level-complete-message" class="message-box hidden flex-col items-center">
+        <span class="title">Level Selesai!</span>
+        <p id="level-score-breakdown" class="mt-4 text-lg"></p>
+        <button id="continue-btn" class="btn">Lanjut ke Level Berikutnya</button>
+    </div>
     <div id="win-message" class="message-box hidden flex-col items-center">
         <span class="title">Selamat!</span>
         <p class="mt-2 text-lg">Anda telah menyelesaikan semua level!</p>
         <p id="final-score" class="mt-4 text-2xl font-bold"></p>
-        <div id="leaderboard-win" class="w-full"></div>
         <button class="btn" onclick="location.reload()">Main Lagi</button>
     </div>
     <div id="lose-message" class="message-box hidden flex-col items-center">
         <span class="title">Waktu Habis!</span>
         <p id="lose-score" class="mt-4 text-2xl font-bold"></p>
-        <div id="leaderboard-lose" class="w-full"></div>
         <button class="btn" onclick="location.reload()">Coba Lagi</button>
     </div>
     
-    <button id="mute-btn" class="hidden">...</button>
+    <!-- Tombol Mute -->
+    <button id="mute-btn">
+        <svg id="unmuted-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+        <svg id="muted-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+    </button>
 
-    <script type="module">
-        // Variabel global
-        let scene, camera, renderer, cubeGroup, starfield, currentUser;
+    <script>
+        // --- Inisialisasi Variabel Global ---
+        let scene, camera, renderer, cubeGroup, starfield;
         let totalScore = 0, timer, gameInterval, destroyedThisLevel = 0;
         const totalCubes = 4 * 4 * 4;
         let isGameOver = true, isMuted = false;
@@ -120,162 +76,15 @@
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let synths = {};
-        
-        // --- Inisialisasi ---
+
+        // --- Panggil Fungsi Inisialisasi ---
         initScene();
-        initAudio();
         animate();
-
-        // --- Logika Autentikasi ---
-        const { auth, db, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } = window.firebase;
         
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider)
-                .catch((error) => console.error("Login Gagal:", error));
-        });
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                // User berhasil login
-                currentUser = user;
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('mute-btn').classList.remove('hidden');
-                startGame(levels[currentLevelIndex]); // Mulai game
-            } else {
-                // User logout atau belum login
-                currentUser = null;
-                document.getElementById('login-screen').classList.remove('hidden');
-                document.getElementById('game-ui').classList.add('hidden');
-            }
-        });
-
-        // --- Logika Game ---
-        function startGame(difficulty) {
-            isGameOver = false;
-            document.getElementById('game-ui').classList.remove('hidden');
-            destroyedThisLevel = 0;
-            timer = 120;
-            updateUI();
-            if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(updateTimer, 1000);
-            Tone.Transport.start();
-            if (!starfield) createStarfield();
-            createRubikCube(difficulty);
-        }
-
-        function levelComplete() {
-            // ... (logika sama seperti sebelumnya)
-            // ... (setelah menghitung skor, panggil loadNextLevel)
-            loadNextLevel(); // Disederhanakan untuk langsung lanjut
-        }
-        
-        async function gameOver(isWin) {
-            isGameOver = true;
-            clearInterval(gameInterval);
-            Tone.Transport.stop();
-            document.getElementById('game-ui').classList.add('hidden');
-
-            // Simpan skor ke Firestore
-            await saveScoreToLeaderboard(totalScore);
-
-            let messageBox, leaderboardContainerId;
-
-            if (isWin) {
-                messageBox = document.getElementById('win-message');
-                leaderboardContainerId = 'leaderboard-win';
-                document.getElementById('final-score').innerText = `Skor Akhir Anda: ${totalScore}`;
-            } else {
-                messageBox = document.getElementById('lose-message');
-                leaderboardContainerId = 'leaderboard-lose';
-                document.getElementById('lose-score').innerText = `Skor Akhir Anda: ${totalScore}`;
-            }
-            
-            messageBox.classList.remove('hidden');
-            messageBox.classList.add('flex');
-            
-            displayLeaderboard(leaderboardContainerId);
-        }
-
-        // --- Interaksi Firestore ---
-        async function saveScoreToLeaderboard(score) {
-            const { db, collection, addDoc, serverTimestamp } = window.firebase;
-            if (!currentUser) return; // Jangan simpan jika tidak login
-            try {
-                await addDoc(collection(db, "leaderboard"), {
-                    name: currentUser.displayName,
-                    score: score,
-                    uid: currentUser.uid,
-                    timestamp: serverTimestamp()
-                });
-            } catch (e) {
-                console.error("Error adding document: ", e);
-            }
-        }
-        
-        function displayLeaderboard(containerId) {
-            const { db, collection, query, orderBy, limit, onSnapshot } = window.firebase;
-            const container = document.getElementById(containerId);
-            container.innerHTML = `<h3 class="font-bold text-xl mb-2">Leaderboard Top 10</h3><div id="leaderboard" class="w-full">Loading...</div>`;
-            const leaderboardEl = container.querySelector('#leaderboard');
-            
-            const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
-            
-            onSnapshot(q, (querySnapshot) => {
-                let html = '<ol class="list-decimal list-inside">';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const isCurrentUser = data.uid === currentUser.uid;
-                    html += `<li class="${isCurrentUser ? 'font-bold text-yellow-400' : ''}">${data.name}: ${data.score}</li>`;
-                });
-                html += '</ol>';
-                leaderboardEl.innerHTML = html;
-            });
-        }
-        
-        // --- Semua fungsi helper lainnya (initScene, animate, handleCubeHit, dll.) ---
-        // Letakkan sisa kode JavaScript dari versi sebelumnya di sini.
-        // Pastikan tidak ada duplikasi deklarasi variabel.
-        function initScene() { /*...*/ }
-        function initAudio() { /*...*/ }
-        function updateTimer() { /*...*/ }
-        function loadNextLevel() { /*...*/ }
-        function updateUI() { /*...*/ }
-        function createStarfield() { /*...*/ }
-        function createRubikCube(difficulty) { /*...*/ }
-        function handleCubeHit(clickedCube, faceIndex) { /*...*/ }
-        function destroyCube(cube) { /*...*/ }
-        function detonateBomb(bombCube) { /*...*/ }
-        function createExplosion(position, color) { /*...*/ }
-        function playSound(type) { /*...*/ }
-        function toggleMute() { /*...*/ }
-        function onWindowResize() { /*...*/ }
-        function onPointerDown(event) { /*...*/ }
-        function onPointerMove(event) { /*...*/ }
-        function onPointerUp(event) { /*...*/ }
-        function animate() { /*...*/ }
-
-    </script>
-    <script>
-        // NOTE: Definisi fungsi-fungsi helper diletakkan di sini agar rapi.
-        // Copy-paste semua fungsi yang ada di <script> sebelumnya ke sini.
-        // Ini adalah cara untuk mengatasi batasan <script type="module">.
-        let scene, camera, renderer, cubeGroup, starfield;
-        let totalScore = 0, timer, gameInterval, destroyedThisLevel = 0;
-        const totalCubes = 4*4*4;
-        let isGameOver = true, isMuted = false;
-        let particles = [];
-        const levels = ['Mudah', 'Sedang', 'Sulit'];
-        let currentLevelIndex = 0;
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        let synths = {};
-
+        // --- Inisialisasi Scene & Audio ---
         function initScene() {
             scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 12;
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -291,9 +100,18 @@
             renderer.domElement.addEventListener('pointermove', onPointerMove);
             renderer.domElement.addEventListener('pointerup', onPointerUp);
             document.getElementById('mute-btn').addEventListener('click', toggleMute);
+            document.getElementById('continue-btn').addEventListener('click', loadNextLevel);
+            document.getElementById('start-btn').addEventListener('click', () => {
+                // Sembunyikan layar awal dan mulai game
+                document.getElementById('start-message').classList.add('hidden');
+                document.getElementById('start-message').classList.remove('flex');
+                initAudio();
+                startGame(levels[currentLevelIndex]);
+            });
         }
 
         async function initAudio() {
+            // Memulai konteks audio hanya setelah interaksi pengguna
             await Tone.start();
             synths.explosion = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
             synths.bomb = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" } }).toDestination();
@@ -301,49 +119,103 @@
             synths.error = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
         }
 
+        // --- Kontrol Alur Game ---
+        function startGame(difficulty) {
+            isGameOver = false;
+            document.getElementById('game-ui').classList.remove('hidden');
+
+            // Reset state level
+            destroyedThisLevel = 0;
+            timer = 120; // Waktu mulai untuk setiap level
+            updateUI();
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(updateTimer, 1000);
+            
+            Tone.Transport.start();
+
+            if (!starfield) createStarfield();
+            createRubikCube(difficulty);
+        }
+
         function updateTimer() {
-            if (isGameOver) return;
             timer--;
             updateUI();
             if (timer <= 0) {
-                // Modul script akan menangani gameOver
-                window.dispatchEvent(new CustomEvent('gameOver', { detail: { isWin: false } }));
+                gameOver(false);
             }
         }
-        window.addEventListener('gameOver', (e) => gameOver(e.detail.isWin));
 
+        function levelComplete() {
+            isGameOver = true; // Jeda game sementara
+            clearInterval(gameInterval);
+            Tone.Transport.stop();
+
+            const timeBonus = timer;
+            totalScore += timeBonus;
+            
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('level-score-breakdown').innerHTML = `Bonus Waktu: ${timeBonus} Poin<br>Total Skor Saat Ini: ${totalScore}`;
+            document.getElementById('level-complete-message').classList.remove('hidden');
+            document.getElementById('level-complete-message').classList.add('flex');
+        }
 
         function loadNextLevel() {
+            document.getElementById('level-complete-message').classList.add('hidden');
             currentLevelIndex++;
             if (currentLevelIndex < levels.length) {
-                // Modul script akan menangani startGame
-                 window.dispatchEvent(new CustomEvent('startGame', { detail: { difficulty: levels[currentLevelIndex] } }));
+                startGame(levels[currentLevelIndex]);
             } else {
-                // Modul script akan menangani gameOver
-                 window.dispatchEvent(new CustomEvent('gameOver', { detail: { isWin: true } }));
+                gameOver(true); // Menang semua level
             }
         }
-         window.addEventListener('startGame', (e) => startGame(e.detail.difficulty));
 
-
+        function gameOver(isWin) {
+            isGameOver = true;
+            clearInterval(gameInterval);
+            Tone.Transport.stop();
+            document.getElementById('game-ui').classList.add('hidden');
+            if (isWin) {
+                document.getElementById('final-score').innerText = `Skor Akhir Anda: ${totalScore}`;
+                document.getElementById('win-message').classList.remove('hidden');
+                document.getElementById('win-message').classList.add('flex');
+            } else {
+                document.getElementById('lose-score').innerText = `Skor Akhir Anda: ${totalScore}`;
+                document.getElementById('lose-message').classList.remove('hidden');
+                document.getElementById('lose-message').classList.add('flex');
+            }
+        }
+        
         function updateUI() {
             document.getElementById('score-board').innerText = `Skor: ${totalScore}`;
             document.getElementById('timer').innerText = `Waktu: ${timer}`;
             document.getElementById('difficulty-display').innerText = `Level: ${levels[currentLevelIndex]}`;
         }
 
+        // --- Pembuatan Objek 3D ---
+        // FUNGSI BARU: Membuat latar belakang bintang 3D.
         function createStarfield() {
-            if (starfield) scene.remove(starfield);
-            const starVertices = [];
-            for (let i = 0; i < 10000; i++) {
+            const starCount = 5000;
+            const starGeometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color();
+            for (let i = 0; i < starCount; i++) {
                 const x = THREE.MathUtils.randFloatSpread(200);
                 const y = THREE.MathUtils.randFloatSpread(200);
                 const z = THREE.MathUtils.randFloatSpread(200);
-                starVertices.push(x, y, z);
+                positions.push(x, y, z);
+                color.setHSL(0.6, 0.2, Math.random() * 0.5 + 0.5);
+                colors.push(color.r, color.g, color.b);
             }
-            const starGeometry = new THREE.BufferGeometry();
-            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            const starMaterial = new THREE.PointsMaterial({
+                size: 0.1,
+                sizeAttenuation: true,
+                transparent: true,
+                vertexColors: true
+            });
             starfield = new THREE.Points(starGeometry, starMaterial);
             scene.add(starfield);
         }
@@ -379,6 +251,7 @@
             scene.add(cubeGroup);
         }
 
+        // --- Logika Game & Interaksi ---
         function handleCubeHit(clickedCube, faceIndex) {
             if (isGameOver || clickedCube.isSolved) return;
             
@@ -389,7 +262,7 @@
                     case 'bomb': playSound('bomb'); detonateBomb(clickedCube); break;
                     default: playSound('explosion'); destroyCube(clickedCube); break;
                 }
-            } else {
+            } else { // Klik salah
                 totalScore -= 1;
                 playSound('error');
             }
@@ -404,9 +277,7 @@
             createExplosion(cube.getWorldPosition(new THREE.Vector3()), color);
             cubeGroup.remove(cube);
             if (destroyedThisLevel === totalCubes) {
-                const timeBonus = timer;
-                totalScore += timeBonus;
-                loadNextLevel();
+                levelComplete();
             }
         }
         
@@ -423,7 +294,7 @@
             cubesToDestroy.forEach((target, index) => {
                  setTimeout(() => {
                     if (!target.isSolved) {
-                       totalScore += 2;
+                       totalScore += 2; // Tambah skor untuk setiap kubus yg hancur oleh bom
                        playSound('explosion');
                        destroyCube(target);
                        updateUI();
@@ -432,20 +303,20 @@
             });
         }
         
+        // FUNGSI BARU: Membuat efek partikel ledakan.
         function createExplosion(position, color) {
-            const particleCount = 15;
-            const particleGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const particleCount = 25;
+            const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
             const particleMaterial = new THREE.MeshBasicMaterial({ color: color, transparent: true });
-
             for (let i = 0; i < particleCount; i++) {
-                const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
                 particle.position.copy(position);
-
                 const velocity = new THREE.Vector3(
-                    (Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)
-                ).normalize().multiplyScalar(Math.random() * 0.12 + 0.06);
-
-                particles.push({ mesh: particle, velocity: velocity, lifetime: 1.2 });
+                    (Math.random() - 0.5) * 0.5,
+                    (Math.random() - 0.5) * 0.5,
+                    (Math.random() - 0.5) * 0.5
+                );
+                particles.push({ mesh: particle, velocity: velocity, lifetime: 1.0 });
                 scene.add(particle);
             }
         }
@@ -456,39 +327,52 @@
             else if (type === 'error') synths.error.triggerAttackRelease("C2", "0.1s");
             else synths[type].triggerAttackRelease("8n");
         }
-        
+
+        // FUNGSI BARU: Mengatur tombol mute dan status audio.
         function toggleMute() {
             isMuted = !isMuted;
-            Tone.Destination.mute = isMuted;
-            // Anda mungkin perlu menambahkan kembali ikon mute/unmute
+            const unmutedIcon = document.getElementById('unmuted-icon');
+            const mutedIcon = document.getElementById('muted-icon');
+            if (isMuted) {
+                Tone.Destination.volume.value = -Infinity; // Mematikan volume
+                unmutedIcon.classList.add('hidden');
+                mutedIcon.classList.remove('hidden');
+            } else {
+                Tone.Destination.volume.value = 0; // Mengaktifkan volume
+                unmutedIcon.classList.remove('hidden');
+                mutedIcon.classList.add('hidden');
+            }
         }
 
+        // --- Event Handlers & Loop Animasi ---
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
-
         function onPointerDown(event) {
             if (isGameOver) return;
-            isDragging = false;
+            isDragging = false; // Reset dragging state on new click to differentiate drag from click
+            setTimeout(() => isDragging = true, 150); // A small delay to allow click detection
+            
             previousMousePosition = { x: event.clientX, y: event.clientY };
         }
-
         function onPointerMove(event) {
-            if(Math.abs(event.clientX - previousMousePosition.x) > 5 || Math.abs(event.clientY - previousMousePosition.y) > 5) {
-                isDragging = true;
-            }
             if (isDragging && !isGameOver && cubeGroup) {
                 const deltaMove = { x: event.clientX - previousMousePosition.x, y: event.clientY - previousMousePosition.y };
-                cubeGroup.rotation.y += deltaMove.x * 0.005;
-                cubeGroup.rotation.x += deltaMove.y * 0.005;
+                if(Math.abs(deltaMove.x) > 2 || Math.abs(deltaMove.y) > 2) { // only rotate if moved significantly
+                     cubeGroup.rotation.y += deltaMove.x * 0.005;
+                     cubeGroup.rotation.x += deltaMove.y * 0.005;
+                }
                 previousMousePosition = { x: event.clientX, y: event.clientY };
             }
         }
-
         function onPointerUp(event) {
-            if (!isDragging && !isGameOver) {
+            const dx = Math.abs(event.clientX - previousMousePosition.x);
+            const dy = Math.abs(event.clientY - previousMousePosition.y);
+
+            // only register as a click if the mouse/finger hasn't moved much
+            if (dx < 5 && dy < 5 && !isGameOver) {
                  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
                  raycaster.setFromCamera(mouse, camera);
@@ -516,7 +400,7 @@
             });
             renderer.render(scene, camera);
         }
-
     </script>
 </body>
 </html>
+
