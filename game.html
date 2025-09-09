@@ -11,51 +11,8 @@
     <!-- Memuat Tone.js untuk audio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
 
-    <!-- SDK Firebase v9 -->
-    <script type="module">
-        // Import fungsi yang kita butuhkan dari SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-
-        // --- KONFIGURASI FIREBASE ANDA ---
-        // GANTI DENGAN KONFIGURASI DARI PROYEK FIREBASE ANDA SENDIRI
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyBA1wTT_iy6YTTlChLeCp5-5nVBvIR2SuA",
-          authDomain: "cubooz-24d2c.firebaseapp.com",
-          projectId: "cubooz-24d2c",
-          storageBucket: "cubooz-24d2c.firebasestorage.app",
-          messagingSenderId: "769025854290",
-          appId: "1:769025854290:web:8567f44cdf19996596c88b",
-          measurementId: "G-K0WHBVHZJH"
-        };
-
-        // Inisialisasi Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        // Simpan referensi ke fungsi agar bisa diakses global
-        window.firebase = {
-            auth,
-            db,
-            GoogleAuthProvider,
-            signInWithPopup,
-            onAuthStateChanged,
-            collection,
-            addDoc,
-            query,
-            orderBy,
-            limit,
-            onSnapshot,
-            serverTimestamp
-        };
-    </script>
-
     <style>
-        /* ... (CSS sama seperti sebelumnya) ... */
-         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Inter', sans-serif; color: white; }
+        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Inter', sans-serif; color: white; }
         canvas { display: block; }
         .overlay-ui { position: absolute; padding: 10px 20px; background-color: rgba(0, 0, 0, 0.7); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 1.1rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px); }
         #game-info { top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; }
@@ -68,13 +25,10 @@
     </style>
 </head>
 <body>
-    <!-- Layar Login -->
-    <div id="login-screen" class="message-box flex flex-col items-center">
-        <h1 class="title mb-4">Game Kubus 3D Online</h1>
-        <p class="mb-6">Masuk dengan Google untuk bermain dan menyimpan skormu di leaderboard global!</p>
-        <button id="login-btn" class="btn">
-            Login dengan Google
-        </button>
+    <!-- Layar Pemuatan -->
+    <div id="loading-screen" class="message-box flex flex-col items-center">
+        <h1 class="title mb-4">Memuat...</h1>
+        <p class="mb-6">Memuat data pengguna dan Firebase...</p>
     </div>
 
     <!-- UI Game -->
@@ -102,10 +56,23 @@
         <button class="btn" onclick="location.reload()">Coba Lagi</button>
     </div>
     
-    <button id="mute-btn" class="hidden">...</button>
+    <button id="mute-btn" class="hidden">
+        <svg id="mute-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M9.383 3.064A1 1 0 0110 3v14a1 1 0 01-1.617.766L5.617 14H3a1 1 0 01-1-1V7a1 1 0 011-1h2.617l3.766-3.936zM15 7a1 1 0 011 1v4a1 1 0 11-2 0V8a1 1 0 011-1z" clip-rule="evenodd"></path>
+        </svg>
+    </button>
 
     <script type="module">
-        // Variabel global
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Game and Firebase Variables ---
         let scene, camera, renderer, cubeGroup, starfield, currentUser;
         let totalScore = 0, timer, gameInterval, destroyedThisLevel = 0;
         const totalCubes = 4 * 4 * 4;
@@ -119,40 +86,52 @@
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let synths = {};
-        
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
         // --- Inisialisasi ---
         initScene();
         initAudio();
         animate();
 
-        // --- Logika Autentikasi ---
-        const { auth, db, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } = window.firebase;
-        
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider)
-                .catch((error) => console.error("Login Gagal:", error));
-        });
-
-        onAuthStateChanged(auth, user => {
+        // Autentikasi dan Logika Game
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // User berhasil login
                 currentUser = user;
-                document.getElementById('login-screen').classList.add('hidden');
+                // Sembunyikan layar pemuatan, mulai game UI
+                document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('mute-btn').classList.remove('hidden');
-                startGame(levels[currentLevelIndex]); // Mulai game
+                document.getElementById('game-ui').classList.remove('hidden');
+                startGame(levels[currentLevelIndex]);
             } else {
-                // User logout atau belum login
-                currentUser = null;
-                document.getElementById('login-screen').classList.remove('hidden');
-                document.getElementById('game-ui').classList.add('hidden');
+                 // Sembunyikan layar pemuatan dan tampilkan kembali
+                 // jika pengguna tidak masuk
+                 document.getElementById('loading-screen').classList.remove('hidden');
+                 document.getElementById('loading-screen').innerHTML = `
+                    <h1 class="title mb-4">Game Kubus 3D Online</h1>
+                    <p class="mb-6">Silakan masuk untuk bermain dan menyimpan skor Anda!</p>
+                `;
             }
         });
+
+        // Autentikasi pengguna
+        try {
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+        } catch (error) {
+            console.error("Gagal melakukan autentikasi dengan Firebase:", error);
+            // Anda dapat menampilkan pesan kesalahan kepada pengguna di sini
+        }
 
         // --- Logika Game ---
         function startGame(difficulty) {
             isGameOver = false;
-            document.getElementById('game-ui').classList.remove('hidden');
             destroyedThisLevel = 0;
             timer = 120;
             updateUI();
@@ -164,19 +143,18 @@
         }
 
         function levelComplete() {
-            // ... (logika sama seperti sebelumnya)
-            // ... (setelah menghitung skor, panggil loadNextLevel)
-            loadNextLevel(); // Disederhanakan untuk langsung lanjut
+            loadNextLevel();
         }
-        
+
         async function gameOver(isWin) {
             isGameOver = true;
             clearInterval(gameInterval);
             Tone.Transport.stop();
             document.getElementById('game-ui').classList.add('hidden');
 
-            // Simpan skor ke Firestore
-            await saveScoreToLeaderboard(totalScore);
+            if (currentUser && currentUser.uid) {
+                await saveScoreToLeaderboard(totalScore);
+            }
 
             let messageBox, leaderboardContainerId;
 
@@ -198,81 +176,53 @@
 
         // --- Interaksi Firestore ---
         async function saveScoreToLeaderboard(score) {
-            const { db, collection, addDoc, serverTimestamp } = window.firebase;
-            if (!currentUser) return; // Jangan simpan jika tidak login
+            if (!currentUser) return;
             try {
-                await addDoc(collection(db, "leaderboard"), {
-                    name: currentUser.displayName,
+                // Simpan data di jalur publik agar semua pengguna dapat melihatnya
+                const leaderboardPath = `artifacts/${appId}/public/data/leaderboard`;
+                await addDoc(collection(db, leaderboardPath), {
+                    name: currentUser.displayName || `Pemain Anonim (${currentUser.uid.substring(0, 5)}...)`,
                     score: score,
                     uid: currentUser.uid,
-                    timestamp: serverTimestamp()
+                    timestamp: new Date()
                 });
             } catch (e) {
                 console.error("Error adding document: ", e);
             }
         }
         
-        function displayLeaderboard(containerId) {
-            const { db, collection, query, orderBy, limit, onSnapshot } = window.firebase;
+        async function displayLeaderboard(containerId) {
             const container = document.getElementById(containerId);
-            container.innerHTML = `<h3 class="font-bold text-xl mb-2">Leaderboard Top 10</h3><div id="leaderboard" class="w-full">Loading...</div>`;
+            container.innerHTML = `<h3 class="font-bold text-xl mb-2">Leaderboard Top 10</h3><div id="leaderboard" class="w-full">Memuat...</div>`;
             const leaderboardEl = container.querySelector('#leaderboard');
             
-            const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
-            
-            onSnapshot(q, (querySnapshot) => {
-                let html = '<ol class="list-decimal list-inside">';
+            try {
+                const leaderboardPath = `artifacts/${appId}/public/data/leaderboard`;
+                const q = query(collection(db, leaderboardPath));
+                const querySnapshot = await getDocs(q);
+                
+                let scores = [];
                 querySnapshot.forEach((doc) => {
-                    const data = doc.data();
+                    scores.push(doc.data());
+                });
+
+                // Mengurutkan skor secara manual di sisi klien
+                scores.sort((a, b) => b.score - a.score);
+                
+                let html = '<ol class="list-decimal list-inside">';
+                scores.slice(0, 10).forEach((data) => {
                     const isCurrentUser = data.uid === currentUser.uid;
                     html += `<li class="${isCurrentUser ? 'font-bold text-yellow-400' : ''}">${data.name}: ${data.score}</li>`;
                 });
                 html += '</ol>';
                 leaderboardEl.innerHTML = html;
-            });
+            } catch (error) {
+                console.error("Gagal memuat leaderboard:", error);
+                leaderboardEl.innerText = "Gagal memuat leaderboard.";
+            }
         }
         
-        // --- Semua fungsi helper lainnya (initScene, animate, handleCubeHit, dll.) ---
-        // Letakkan sisa kode JavaScript dari versi sebelumnya di sini.
-        // Pastikan tidak ada duplikasi deklarasi variabel.
-        function initScene() { /*...*/ }
-        function initAudio() { /*...*/ }
-        function updateTimer() { /*...*/ }
-        function loadNextLevel() { /*...*/ }
-        function updateUI() { /*...*/ }
-        function createStarfield() { /*...*/ }
-        function createRubikCube(difficulty) { /*...*/ }
-        function handleCubeHit(clickedCube, faceIndex) { /*...*/ }
-        function destroyCube(cube) { /*...*/ }
-        function detonateBomb(bombCube) { /*...*/ }
-        function createExplosion(position, color) { /*...*/ }
-        function playSound(type) { /*...*/ }
-        function toggleMute() { /*...*/ }
-        function onWindowResize() { /*...*/ }
-        function onPointerDown(event) { /*...*/ }
-        function onPointerMove(event) { /*...*/ }
-        function onPointerUp(event) { /*...*/ }
-        function animate() { /*...*/ }
-
-    </script>
-    <script>
-        // NOTE: Definisi fungsi-fungsi helper diletakkan di sini agar rapi.
-        // Copy-paste semua fungsi yang ada di <script> sebelumnya ke sini.
-        // Ini adalah cara untuk mengatasi batasan <script type="module">.
-        let scene, camera, renderer, cubeGroup, starfield;
-        let totalScore = 0, timer, gameInterval, destroyedThisLevel = 0;
-        const totalCubes = 4*4*4;
-        let isGameOver = true, isMuted = false;
-        let particles = [];
-        const levels = ['Mudah', 'Sedang', 'Sulit'];
-        let currentLevelIndex = 0;
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        let synths = {};
-
+        // --- Semua fungsi helper lainnya ---
         function initScene() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -305,25 +255,18 @@
             timer--;
             updateUI();
             if (timer <= 0) {
-                // Modul script akan menangani gameOver
-                window.dispatchEvent(new CustomEvent('gameOver', { detail: { isWin: false } }));
+                gameOver(false);
             }
         }
-        window.addEventListener('gameOver', (e) => gameOver(e.detail.isWin));
-
 
         function loadNextLevel() {
             currentLevelIndex++;
             if (currentLevelIndex < levels.length) {
-                // Modul script akan menangani startGame
-                 window.dispatchEvent(new CustomEvent('startGame', { detail: { difficulty: levels[currentLevelIndex] } }));
+                 startGame(levels[currentLevelIndex]);
             } else {
-                // Modul script akan menangani gameOver
-                 window.dispatchEvent(new CustomEvent('gameOver', { detail: { isWin: true } }));
+                 gameOver(true);
             }
         }
-         window.addEventListener('startGame', (e) => startGame(e.detail.difficulty));
-
 
         function updateUI() {
             document.getElementById('score-board').innerText = `Skor: ${totalScore}`;
@@ -459,7 +402,12 @@
         function toggleMute() {
             isMuted = !isMuted;
             Tone.Destination.mute = isMuted;
-            // Anda mungkin perlu menambahkan kembali ikon mute/unmute
+            const muteIcon = document.getElementById('mute-icon');
+            if (isMuted) {
+                 muteIcon.innerHTML = `<path fill-rule="evenodd" d="M15.414 14.586a2 2 0 01-2.828 0L10 12.828l-2.586 2.586a2 2 0 01-2.828-2.828L7.172 10 4.586 7.414a2 2 0 012.828-2.828L10 7.172l2.586-2.586a2 2 0 012.828 2.828L12.828 10l2.586 2.586a2 2 0 010 2.828z" clip-rule="evenodd"></path>`;
+            } else {
+                 muteIcon.innerHTML = `<path fill-rule="evenodd" d="M9.383 3.064A1 1 0 0110 3v14a1 1 0 01-1.617.766L5.617 14H3a1 1 0 01-1-1V7a1 1 0 011-1h2.617l3.766-3.936zM15 7a1 1 0 011 1v4a1 1 0 11-2 0V8a1 1 0 011-1z" clip-rule="evenodd"></path>`;
+            }
         }
 
         function onWindowResize() {
@@ -515,7 +463,6 @@
             });
             renderer.render(scene, camera);
         }
-
     </script>
 </body>
 </html>
