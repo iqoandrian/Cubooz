@@ -1,11 +1,12 @@
 // --- Firebase Setup ---
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBA1wTT_iy6YTTlChLeCp5-5nVBvIR2SuA",
+  authDomain: "cubooz-24d2c.firebaseapp.com",
+  projectId: "cubooz-24d2c",
+  storageBucket: "cubooz-24d2c.firebasestorage.app",
+  messagingSenderId: "769025854290",
+  appId: "1:769025854290:web:8567f44cdf19996596c88b",
+  measurementId: "G-K0WHBVHZJH"
 };
 
 firebase.initializeApp(firebaseConfig);
