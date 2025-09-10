@@ -2,7 +2,6 @@ import { scene } from "./gameCore.js";
 
 export let cubeGroup;
 
-// Membuat Rubik Cube
 export function createRubikCube(size = 3) {
   if (cubeGroup) scene.remove(cubeGroup);
 
