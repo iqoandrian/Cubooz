@@ -10,9 +10,9 @@
 
   <!-- Three.js untuk 3D -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  
+
   <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#111827">
 </head>
 <body class="bg-black text-white overflow-hidden">
@@ -58,15 +58,15 @@
     <ul id="leaderboard" class="space-y-1 text-sm"></ul>
   </div>
 
-  <!-- === Script Modules === -->
+  <!-- === Script Modules (panggil dari folder js/) === -->
   <script type="module" src="./js/main.js"></script>
-  
+
   <script>
     // === Register Service Worker ===
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js")
-        .then(reg => console.log("Service Worker terdaftar:", reg.scope))
-        .catch(err => console.error("Service Worker gagal:", err));
+      navigator.serviceWorker.register("./service-worker.js")
+        .then(reg => console.log("✅ Service Worker terdaftar:", reg.scope))
+        .catch(err => console.error("❌ Service Worker gagal:", err));
     }
   </script>
 </body>
