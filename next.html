@@ -3,12 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Game Kubus 3D - Progresif (Dengan Progress Bar & Floating Score)</title>
-    <!-- PWA Manifest -->
-    /*
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#000000">
-    */
+    <title>Play Cubooz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
@@ -537,15 +532,7 @@
         // make a quick test helper for debugging (optional)
         window._debug = { scene, camera, renderer };
         
-        <script>
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('./sw.js')
-                        .then(res => console.log('Service worker registered'))
-                        .catch(err => console.log('Service worker not registered', err));
-                });
-            }
-        </script>
+        
     </script>
 </body>
 </html>
