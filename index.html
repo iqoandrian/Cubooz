@@ -1,73 +1,17 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Game Kubus 3D</title>
-
-  <!-- Tailwind CSS untuk styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Three.js untuk 3D -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#111827">
+  <meta charset="UTF-8">
+  <title>Cube Test</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: black; }
+    canvas { display: block; }
+  </style>
 </head>
-<body class="bg-black text-white overflow-hidden">
-
-  <!-- === UI Game === -->
-  <div id="game-ui" class="hidden fixed top-4 left-1/2 -translate-x-1/2 flex gap-6 bg-black/50 px-4 py-2 rounded-lg backdrop-blur">
-    <div id="score-board">Skor: 0</div>
-    <div id="timer">Waktu: 120</div>
-    <div id="difficulty-display">Level: -</div>
-  </div>
-
-  <!-- === Pesan Awal === -->
-  <div id="start-message" class="message-box fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-center">
-    <h1 class="text-2xl font-bold">Game Kubus 3D</h1>
-    <p class="mt-2">Klik Google Login untuk mulai main dan simpan skor!</p>
-    <button id="login-btn" class="mt-4 px-4 py-2 bg-blue-600 rounded">Login dengan Google</button>
-  </div>
-
-  <!-- === Pesan Level Selesai === -->
-  <div id="level-complete-message" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-center">
-    <h2 class="text-xl font-bold">Level Selesai!</h2>
-    <p id="level-score-breakdown" class="mt-2"></p>
-    <button id="continue-btn" class="mt-4 px-4 py-2 bg-green-600 rounded">Lanjut</button>
-  </div>
-
-  <!-- === Pesan Menang === -->
-  <div id="win-message" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-center">
-    <h2 class="text-2xl font-bold">🎉 Menang!</h2>
-    <p id="final-score" class="mt-2"></p>
-    <button class="mt-4 px-4 py-2 bg-yellow-600 rounded" onclick="location.reload()">Main Lagi</button>
-  </div>
-
-  <!-- === Pesan Kalah === -->
-  <div id="lose-message" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-center">
-    <h2 class="text-2xl font-bold">⏳ Waktu Habis!</h2>
-    <p id="lose-score" class="mt-2"></p>
-    <button class="mt-4 px-4 py-2 bg-red-600 rounded" onclick="location.reload()">Coba Lagi</button>
-  </div>
-
-  <!-- === Leaderboard === -->
-  <div class="fixed bottom-4 left-4 bg-black/70 p-4 rounded-lg max-w-xs">
-    <h3 class="font-bold mb-2">🏆 Leaderboard</h3>
-    <ul id="leaderboard" class="space-y-1 text-sm"></ul>
-  </div>
-
-  <!-- === Script Modules (panggil dari folder js/) === -->
+<body>
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
+  <!-- Main entry -->
   <script type="module" src="./js/main.js"></script>
-
-  <script>
-    // === Register Service Worker ===
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js")
-        .then(reg => console.log("✅ Service Worker terdaftar:", reg.scope))
-        .catch(err => console.error("❌ Service Worker gagal:", err));
-    }
-  </script>
 </body>
 </html>
