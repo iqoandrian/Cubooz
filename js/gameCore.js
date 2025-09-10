@@ -1,23 +1,18 @@
-// === Core Three.js Setup ===
 export let scene, camera, renderer, cubeGroup;
 
-// Inisialisasi scene
 export function initScene() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
 
-  // Kamera
   camera = new THREE.PerspectiveCamera(
     75, window.innerWidth / window.innerHeight, 0.1, 1000
   );
-  camera.position.z = 8; // Lebih dekat dari sebelumnya
+  camera.position.z = 8; // agak dekat
 
-  // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // Lampu
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambientLight);
 
@@ -28,7 +23,6 @@ export function initScene() {
   window.addEventListener("resize", onWindowResize);
 }
 
-// Render loop
 export function animate() {
   requestAnimationFrame(animate);
 
