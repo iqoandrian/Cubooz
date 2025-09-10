@@ -1,52 +1,45 @@
-// === Global Vars & Scene Setup ===
+// === Core Three.js Setup ===
+export let scene, camera, renderer, cubeGroup;
 
-// Variabel utama untuk scene
-export let scene, camera, renderer, cubeGroup, starfield;
-
-// Variabel gameplay
-export let totalScore = 0, timer, gameInterval, destroyedThisLevel = 0;
-export let isGameOver = true, isMuted = false;
-
-// Partikel ledakan
-export let particles = [];
-
-// Difficulty settings
-export const levels = ['Mudah','Sedang','Sulit'];
-export let currentLevelIndex = 0;
-export let currentCubeSize = 3; // start dari 3x3x3
-
-// Raycasting untuk deteksi klik
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-export { raycaster, mouse };
-
-// === INIT SCENE ===
+// Inisialisasi scene
 export function initScene() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
 
-  // Kamera lebih dekat biar cube jelas
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.z = 10; // kalau terlalu jauh, turunin nilai ini
+  // Kamera
+  camera = new THREE.PerspectiveCamera(
+    75, window.innerWidth / window.innerHeight, 0.1, 1000
+  );
+  camera.position.z = 8; // Lebih dekat dari sebelumnya
 
-  // Renderer WebGL
+  // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // Cahaya
+  // Lampu
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
-  directionalLight.position.set(5, 10, 7.5);
-  scene.add(directionalLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(5, 10, 7.5);
+  scene.add(dirLight);
 
-  // Resize listener
-  window.addEventListener('resize', onWindowResize);
+  window.addEventListener("resize", onWindowResize);
 }
 
-// === UPDATE RENDER KETIKA WINDOW RESIZE ===
+// Render loop
+export function animate() {
+  requestAnimationFrame(animate);
+
+  if (cubeGroup) {
+    cubeGroup.rotation.y += 0.003;
+    cubeGroup.rotation.x += 0.001;
+  }
+
+  renderer.render(scene, camera);
+}
+
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
